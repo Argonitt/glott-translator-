@@ -1,0 +1,111 @@
+
+# Создаём мини-версию для копирования на телефон
+mini_html = '''<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Глот</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:system-ui;background:#0f0f1a;color:#fff;padding:20px;min-height:100vh}
+        .logo{width:80px;height:80px;background:linear-gradient(135deg,#6b9fff,#4ecdc4);border-radius:20px;margin:20px auto;display:flex;align-items:center;justify-content:center;font-size:40px}
+        h1{text-align:center;background:linear-gradient(135deg,#6b9fff,#4ecdc4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+        .card{background:#1e1e2e;border-radius:16px;padding:20px;margin:15px 0}
+        select{width:100%;padding:12px;margin:5px 0;background:#2a2a3a;color:#fff;border:none;border-radius:10px;font-size:16px}
+        textarea{width:100%;min-height:120px;padding:15px;margin:10px 0;background:#2a2a3a;color:#fff;border:none;border-radius:12px;font-size:16px;resize:none}
+        button{width:100%;padding:15px;background:linear-gradient(135deg,#6b9fff,#4ecdc4);color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:bold;margin:10px 0}
+        .result{background:#1e1e2e;border-radius:16px;padding:20px;margin-top:15px;display:none;border:1px solid #6b9fff}
+        .result.show{display:block}
+        .lang{color:#6b9fff;font-size:12px;margin-bottom:10px}
+        .orig{color:#888;font-size:14px;margin-bottom:10px}
+        .trans{font-size:18px;line-height:1.5}
+        .btn-row{display:flex;gap:10px}
+        .btn-row button{flex:1}
+        .icon-btn{background:#2a2a3a;font-size:20px}
+    </style>
+</head>
+<body>
+    <div class="logo">🐙</div>
+    <h1>Глот</h1>
+    
+    <div class="card">
+        <select id="from">
+            <option value="auto">Авто</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="ru">Русский</option>
+        </select>
+        
+        <select id="to">
+            <option value="ru" selected>Русский</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+        </select>
+        
+        <textarea id="text" placeholder="Введите текст..."></textarea>
+        
+        <div class="btn-row">
+            <button onclick="translate()">Перевести</button>
+            <button class="icon-btn" onclick="speak()">🔊</button>
+        </div>
+    </div>
+    
+    <div id="result" class="result">
+        <div class="lang" id="lang"></div>
+        <div class="orig" id="orig"></div>
+        <div class="trans" id="trans"></div>
+    </div>
+
+<script>
+async function translate(){
+    const t=document.getElementById('text').value;
+    if(!t)return;
+    const f=document.getElementById('from').value;
+    const o=document.getElementById('to').value;
+    try{
+        const r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${f}&tl=${o}&dt=t&q=${encodeURIComponent(t)}`);
+        const d=await r.json();
+        let tr='';
+        if(d[0])d[0].forEach(i=>tr+=i[0]);
+        document.getElementById('lang').textContent=(d[2]||f).toUpperCase()+' → '+o.toUpperCase();
+        document.getElementById('orig').textContent=t;
+        document.getElementById('trans').textContent=tr;
+        document.getElementById('result').classList.add('show');
+        localStorage.setItem('last',JSON.stringify({t,tr}));
+    }catch(e){alert('Ошибка: '+e)}
+}
+function speak(){
+    const t=document.getElementById('trans').textContent;
+    if(t&&'speechSynthesis'in window){
+        const u=new SpeechSynthesisUtterance(t);
+        u.lang=document.getElementById('to').value==='ru'?'ru-RU':'en-US';
+        speechSynthesis.speak(u);
+    }
+}
+
+// Голосовой ввод
+if('webkitSpeechRecognition'in window){
+    const r=new webkitSpeechRecognition();
+    r.lang='ru-RU';
+    r.onresult=e=>{
+        document.getElementById('text').value=e.results[0][0].transcript;
+        translate();
+    };
+    const b=document.createElement('button');
+    b.textContent='🎤';
+    b.className='icon-btn';
+    b.onclick=()=>r.start();
+    document.querySelector('.btn-row').appendChild(b);
+}
+</script>
+</body>
+</html>'''
